@@ -1,38 +1,52 @@
 import React, {Component} from 'react'
-import Add from './components/add/Add'
-import List from './components/list/List'
 export default class App extends Component {
-    state={comments:[]}
-    addComment=(data)=>{
-        let comments=[...this.state.comments]
-        comments.unshift(data)
-        this.setState({comments})
+    state={
+        isLoading:true,
+        repoName:'',
+        repoUrl:'',
+        errMsg:''
     }
-    deleteComment=(commentId)=>{
-        let comments=[...this.state.comments];
-        comments.forEach((item,index)=>{
-            if(item.commentId===commentId){
-                comments.splice(index,1);
-            }
-        })
-        this.setState({comments});
+    keyWord='v'
+    async componentDidMount(){
+        const url= `https://api.github.com/search/repositories?q=${this.keyWord}&sort=stars`
+        fetch(url)
+            .then((result)=>{
+                if(result.ok){
+                    return result.json()
+                }else{
+                    return Promise.reject('请求资源不存在')
+                }
+            })
+            .then((data)=>{
+                console.log('成功了')
+                let repoInfo=data.items[0]
+                this.setState({
+                    isLoading:false,
+                    repoName:repoInfo.name,
+                    repoUrl:repoInfo.html_url,
+                    errMsg:''
+                })
+            })
+            .catch((err)=>{
+                console.log(err.toString())
+                this.setState({
+                    isLoading:false,
+                    repoName:'',
+                    repoUrl:'',
+                    errMsg:err.toString()
+                })
+            })
     }
+
     render() {
-        let {comments}=this.state;
-        return (
-            <div>
-                <header className="site-header jumbotron">
-                    <div className="container">
-                        <div className="row">
-                            <div className="col-xs-12">
-                                <h1>请发表对React的评论</h1>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-                <Add addComment={this.addComment}/>
-                <List comments={comments} deleteComment={this.deleteComment}/>
-            </div>
-        )
+        let {isLoading,repoUrl,errMsg,repoName}=this.state;
+        if(isLoading){
+            return <h3>loading...</h3>
+        }else if(errMsg){
+            return <h3>{errMsg}</h3>
+        }else{
+            return <h3>github上包含【{this.keyWord}】关键字的所有仓库中，点赞数量最多的是 <a href={repoUrl}>{repoName}</a></h3>
+        }
+
     }
 }
